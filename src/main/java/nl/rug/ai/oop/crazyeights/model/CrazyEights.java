@@ -10,16 +10,19 @@ public class CrazyEights {
 	public static int INITIAL_HAND_SIZE = 5;
 
 	/**
-	 * Tracks the state of the game. Useful for determining
-	 * what actions are legal to perform
+	 * Tracks the state of the game. Used to prevent players from
+	 * executing cards.
 	 */
 	enum GameState {
-		INACTIVE, PLAYING, CHOOSING_SUIT
+		INACTIVE, PLAYING, WAITING_FOR_PLAYER_DECISION
 	}
 	private List<CrazyEightsPlayer> players = new ArrayList();
 	private Map<CrazyEightsPlayer, List<Card>> hands = new HashMap();
 		// Note that there is no outside access to card hands,
 		// ensuring that players cannot see the cards of others
+		// However, players can also not see how many cards other
+		// players have. You may want to change this for a
+		// GUI implementation.
 	private List<Card> deck = new ArrayList();
 	private List<Card> discardPile = new ArrayList();
 	private Card topCardOnDiscardPile;
@@ -106,13 +109,17 @@ public class CrazyEights {
 	 * is placed on top of the discard pile.
 	 */
 	private void selectSuit() {
-		Card.Suit suit = currentPlayer.chooseSuit(this);
-		topCardOnDiscardPile = new Card(suit, topCardOnDiscardPile.getValue()) {
-			@Override
-			protected void execute() {	}
-		};
-		System.out.println("Player "+players.indexOf(currentPlayer)+" changes color to "+suit);
-
+		if (state == GameState.PLAYING) {
+			state = GameState.WAITING_FOR_PLAYER_DECISION;
+			Card.Suit suit = currentPlayer.chooseSuit(this);
+			state = GameState.PLAYING;
+			topCardOnDiscardPile = new Card(suit, topCardOnDiscardPile.getValue()) {
+				@Override
+				protected void execute() {
+				}
+			};
+			System.out.println("Player " + players.indexOf(currentPlayer) + " changes color to " + suit);
+		}
 	}
 
 	/**
@@ -120,16 +127,20 @@ public class CrazyEights {
 	 * @param card Card to be discarded
 	 */
 	private void discard(Card card) {
-		topCardOnDiscardPile = card;
-		discardPile.add(card);
+		if (state == GameState.PLAYING) {
+			topCardOnDiscardPile = card;
+			discardPile.add(card);
+		}
 	}
 
 	/**
 	 * Passes the turn to the next player
 	 */
 	private void moveToNextPlayer() {
-		int currentPlayerId = players.indexOf(currentPlayer);
-		currentPlayer = players.get((currentPlayerId + 1) % players.size());
+		if (state == GameState.PLAYING) {
+			int currentPlayerId = players.indexOf(currentPlayer);
+			currentPlayer = players.get((currentPlayerId + 1) % players.size());
+		}
 	}
 
 	/**
@@ -137,8 +148,10 @@ public class CrazyEights {
 	 * @param n the number of cards to draw
 	 */
 	private void drawCards(int n) {
-		for (int i = 0; i < n; i++) {
-			drawCard();
+		if (state == GameState.PLAYING) {
+			for (int i = 0; i < n; i++) {
+				drawCard();
+			}
 		}
 	}
 
@@ -148,16 +161,19 @@ public class CrazyEights {
 	 * @return Card that was drawn by the player
 	 */
 	private Card drawCard() {
-		if (deck.size() <= 1) {
-			while (discardPile.size() > 1) {
-				deck.add(discardPile.remove(1));
+		if (state == GameState.PLAYING) {
+			if (deck.size() <= 1) {
+				while (discardPile.size() > 1) {
+					deck.add(discardPile.remove(1));
+				}
+				Collections.shuffle(deck);
 			}
-			Collections.shuffle(deck);
+			Card cardDrawn = deck.remove(0);
+			hands.get(currentPlayer).add(cardDrawn);
+			System.out.println("Player " + players.indexOf(currentPlayer) + " draws " + cardDrawn);
+			return cardDrawn;
 		}
-		Card cardDrawn = deck.remove(0);
-		hands.get(currentPlayer).add(cardDrawn);
-		System.out.println("Player "+players.indexOf(currentPlayer)+" draws "+cardDrawn);
-		return cardDrawn;
+		return null;
 	}
 
 	/**
@@ -230,8 +246,10 @@ public class CrazyEights {
 				// their actual hand
 			Card cardPlayed;
 			do {
+				state = GameState.WAITING_FOR_PLAYER_DECISION;
 				cardPlayed = currentPlayer.takeTurn(cards, this);
-			} while (!(cardPlayed == null || isPlayable(cardPlayed)));
+				state = GameState.PLAYING;
+			} while (!(cardPlayed == null || (hand.contains(cardPlayed) && isPlayable(cardPlayed))));
 				// The while loop above ensures that the current player
 				// can actually play the card they have chosen
 			if (cardPlayed == null) {
@@ -276,10 +294,7 @@ public class CrazyEights {
 	 * @return true iff the current player can play the given Card
 	 */
 	public boolean isPlayable(Card card) {
-		if (hands.get(currentPlayer).contains(card)) {
-			return card.isPlayableOn(topCardOnDiscardPile);
-		}
-		return false;
+		return card.isPlayableOn(topCardOnDiscardPile);
 	}
 
 	/**
