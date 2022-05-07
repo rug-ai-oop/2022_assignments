@@ -11,6 +11,6 @@ In the first assignment, you implemented a variation of the Crazy Eights card ga
 
 As in the original game, the player should not be able to cheat. In particular, the player should not be able to draw cards, play cards, or choose a suit if it is not their turn.
 
-Your implementation should observe the Model-View-Controller pattern. Your implementation of the first assignment will function as the model. If you were unable to complete the first assignment, there is an implementation on the branch `crazyeights-model` that you can use. You may need to make extensive changes to your model to make it functional in an event-based GUI setting. 
+Your implementation should observe the Model-View-Controller pattern. Your implementation of the first assignment will function as the model. If you were unable to complete the first assignment, there will be implementation that you can use on the branch `crazyeights-model` of the repository `2022_assignments` starting 9 May. You may need to make some changes to your model to make it functional in an event-based GUI setting. 
 
 Deadline: 20 May, 23:59
