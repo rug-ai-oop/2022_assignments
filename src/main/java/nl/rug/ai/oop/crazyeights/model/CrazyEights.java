@@ -46,8 +46,10 @@ public class CrazyEights {
 				 */
 				@Override
 				protected void execute() {
-					Collections.reverse(players);
-					moveToNextPlayer();
+					if (state == GameState.PLAYING) {
+						Collections.reverse(players);
+						moveToNextPlayer();
+					}
 				}
 			});
 			deck.add(new Card(suit, 2){
@@ -56,8 +58,10 @@ public class CrazyEights {
 				 */
 				@Override
 				protected void execute() {
-					moveToNextPlayer();
-					drawCards(2);
+					if (state == GameState.PLAYING) {
+						moveToNextPlayer();
+						drawCards(2);
+					}
 				}
 			});
 			deck.add(new Card(suit, 12){
@@ -66,8 +70,10 @@ public class CrazyEights {
 				 */
 				@Override
 				protected void execute() {
-					moveToNextPlayer();
-					moveToNextPlayer();
+					if (state == GameState.PLAYING) {
+						moveToNextPlayer();
+						moveToNextPlayer();
+					}
 				}
 			});
 			deck.add(new Card(suit, 8){
@@ -76,8 +82,10 @@ public class CrazyEights {
 				 */
 				@Override
 				protected void execute() {
-					selectSuit();
-					moveToNextPlayer();
+					if (state == GameState.PLAYING) {
+						selectSuit();
+						moveToNextPlayer();
+					}
 				}
 
 				/**
@@ -96,7 +104,9 @@ public class CrazyEights {
 					 */
 					@Override
 					protected void execute() {
-						moveToNextPlayer();
+						if (state == GameState.PLAYING) {
+							moveToNextPlayer();
+						}
 					}
 				});
 			}
