@@ -13,7 +13,7 @@ public interface CrazyEightsPlayer {
 	 * @param game CardGame being played
 	 * @return Card to be played, or null to draw a card
 	 */
-	Card takeTurn(List<Card> hand, CrazyEights game);
+	void takeTurn(List<Card> hand, CrazyEights game);
 
 	/**
 	 * Asks the player to select a suit from the four possibilities
@@ -21,5 +21,6 @@ public interface CrazyEightsPlayer {
 	 * @param game CardGame being played
 	 * @return Card.Suit chosen by the player
 	 */
-	Card.Suit chooseSuit(CrazyEights game);
+	void chooseSuit(CrazyEights game);
+
 }

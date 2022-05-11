@@ -5,7 +5,7 @@ package nl.rug.ai.oop.crazyeights.model;
  * This class implement immutable cards, so that they
  * cannot be changed by unscrupulous players.
  */
-public abstract class Card {
+public class Card {
 	/**
 	 * Using an enumeration limits our cards to
 	 * clubs, hearts, diamonds, and spades.
@@ -24,6 +24,14 @@ public abstract class Card {
 	public Card(Suit suit, int value) {
 		this.suit = suit;
 		this.value = value;
+	}
+	/**
+	 * Generates a duplicate of the given card
+	 * @param card Card to duplicate
+	 */
+	public Card(Card card) {
+		this.suit = card.suit;
+		this.value = card.value;
 	}
 
 	@Override
@@ -85,6 +93,8 @@ public abstract class Card {
 	/**
 	 * Performs the action on the card. For most cards, this will be empty.
 	 */
-	protected abstract void execute();
+	protected void execute() {
+
+	}
 
 }

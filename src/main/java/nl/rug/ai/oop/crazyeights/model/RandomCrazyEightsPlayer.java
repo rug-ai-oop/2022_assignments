@@ -17,14 +17,14 @@ public class RandomCrazyEightsPlayer implements CrazyEightsPlayer {
 	 * @return
 	 */
 	@Override
-	public Card takeTurn(List<Card> hand, CrazyEights game) {
+	public void takeTurn(List<Card> hand, CrazyEights game) {
 		Collections.shuffle(hand);
 		for (Card card : hand) {
 			if (game.isPlayable(card)) {
-				return card;
+				game.playCard(this, card);
 			}
 		}
-		return null;
+		game.playCard(this, null);
 	}
 
 	/**
@@ -33,7 +33,7 @@ public class RandomCrazyEightsPlayer implements CrazyEightsPlayer {
 	 * @return
 	 */
 	@Override
-	public Card.Suit chooseSuit(CrazyEights game) {
-		return Card.Suit.values()[new Random().nextInt(Card.Suit.values().length)];
+	public void chooseSuit(CrazyEights game) {
+		game.selectSuit(this, Card.Suit.values()[new Random().nextInt(Card.Suit.values().length)]);
 	}
 }

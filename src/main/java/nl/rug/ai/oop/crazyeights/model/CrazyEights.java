@@ -1,8 +1,17 @@
 package nl.rug.ai.oop.crazyeights.model;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.*;
 
 
+/**
+ * Game controller class for Crazy Eights, with the following rules:
+ *  Ace  - Reverses play order
+ *   2   - Draw 2 cards
+ *   8   - Can be played on any card, changes suit
+ * Queen - Skip turn
+ */
 public class CrazyEights {
 	/**
 	 * The initial hand size of players
@@ -14,7 +23,7 @@ public class CrazyEights {
 	 * executing cards.
 	 */
 	enum GameState {
-		INACTIVE, PLAYING, WAITING_FOR_PLAYER_DECISION
+		INACTIVE, PLAYING, WAITING_FOR_PLAYER_CARD, WAITING_FOR_PLAYER_SUIT
 	}
 	private List<CrazyEightsPlayer> players = new ArrayList();
 	private Map<CrazyEightsPlayer, List<Card>> hands = new HashMap();
@@ -28,6 +37,7 @@ public class CrazyEights {
 	private Card topCardOnDiscardPile;
 	private CrazyEightsPlayer currentPlayer;
 	private GameState state = GameState.INACTIVE;
+	private List<PropertyChangeListener> listeners = new ArrayList();
 
 	/**
 	 * Builds a deck of cards, implementing the special rules
@@ -84,7 +94,6 @@ public class CrazyEights {
 				protected void execute() {
 					if (state == GameState.PLAYING) {
 						selectSuit();
-						moveToNextPlayer();
 					}
 				}
 
@@ -96,7 +105,7 @@ public class CrazyEights {
 					return true;
 				}
 			});
-			for (int i: new int[]{3,4,5,6,7,9,10,12}) {
+			for (int i: new int[]{3,4,5,6,7,9,10,11,13}) {
 				deck.add(new Card(suit, i){
 					/**
 					 * Regular cards do nothing but
@@ -120,15 +129,24 @@ public class CrazyEights {
 	 */
 	private void selectSuit() {
 		if (state == GameState.PLAYING) {
-			state = GameState.WAITING_FOR_PLAYER_DECISION;
-			Card.Suit suit = currentPlayer.chooseSuit(this);
+			state = GameState.WAITING_FOR_PLAYER_SUIT;
+			currentPlayer.chooseSuit(this);
+		}
+	}
+
+	/**
+	 * Notifies the game that the given player has selected the given suit
+	 * @param player Player that has selected a suit
+	 * @param suit Suit that has been selected
+	 */
+	public void selectSuit(CrazyEightsPlayer player, Card.Suit suit) {
+		if (state == GameState.WAITING_FOR_PLAYER_SUIT && currentPlayer == player) {
 			state = GameState.PLAYING;
-			topCardOnDiscardPile = new Card(suit, topCardOnDiscardPile.getValue()) {
-				@Override
-				protected void execute() {
-				}
-			};
-			System.out.println("Player " + players.indexOf(currentPlayer) + " changes color to " + suit);
+			topCardOnDiscardPile = new Card(suit, topCardOnDiscardPile.getValue());
+			notifyListenersOfTopCard();
+			moveToNextPlayer();
+		} else {
+			throw new IllegalStateException("Player is not allowed to select a suit at this time.");
 		}
 	}
 
@@ -140,6 +158,7 @@ public class CrazyEights {
 		if (state == GameState.PLAYING) {
 			topCardOnDiscardPile = card;
 			discardPile.add(card);
+			notifyListenersOfTopCard();
 		}
 	}
 
@@ -165,6 +184,13 @@ public class CrazyEights {
 		}
 	}
 
+	private void shuffleDiscardPileIntoDeck() {
+		while (discardPile.size() > 1) {
+			deck.add(discardPile.remove(1));
+		}
+		Collections.shuffle(deck);
+	}
+
 	/**
 	 * Causes the current player to draw a card. If the deck has
 	 * run out, the discard pile is shuffled into the deck.
@@ -173,14 +199,11 @@ public class CrazyEights {
 	private Card drawCard() {
 		if (state == GameState.PLAYING) {
 			if (deck.size() <= 1) {
-				while (discardPile.size() > 1) {
-					deck.add(discardPile.remove(1));
-				}
-				Collections.shuffle(deck);
+				shuffleDiscardPileIntoDeck();
 			}
 			Card cardDrawn = deck.remove(0);
 			hands.get(currentPlayer).add(cardDrawn);
-			System.out.println("Player " + players.indexOf(currentPlayer) + " draws " + cardDrawn);
+			notifyListenersOfHandSize();
 			return cardDrawn;
 		}
 		return null;
@@ -195,6 +218,8 @@ public class CrazyEights {
 		if (!isGameActive()) {
 			players.add(player);
 			hands.put(player, new ArrayList());
+		} else {
+			throw new IllegalStateException("Cannot add players to a game in progress.");
 		}
 	}
 
@@ -207,6 +232,8 @@ public class CrazyEights {
 		if (!isGameActive()) {
 			players.remove(player);
 			hands.remove(player).clear();
+		} else {
+			throw new IllegalStateException("Cannot remove players from a game in progress.");
 		}
 	}
 
@@ -222,22 +249,17 @@ public class CrazyEights {
 	 * Starts a new game
 	 */
 	public void start() {
-		if (!isGameActive()) {
-			state = GameState.PLAYING;
-			buildDeck();
-			Collections.shuffle(deck);
-			for (int i = 0; i < players.size(); i++) {
-				List<Card> hand = hands.get(players.get(i));
-				for (int j = 0; j < INITIAL_HAND_SIZE; j++) {
-					hand.add(deck.remove(0));
-				}
-				System.out.println(i + ":\t" + hand);
-			}
-			discard(deck.remove(0));
-			System.out.println("Top card is " + topCardOnDiscardPile);
-			currentPlayer = players.get(0);
-			playRound();
+		state = GameState.PLAYING;
+		buildDeck();
+		Collections.shuffle(deck);
+		for (CrazyEightsPlayer player : players) {
+			hands.get(player).clear();
+			currentPlayer = player;
+			drawCards(INITIAL_HAND_SIZE);
 		}
+		discard(deck.remove(0));
+		currentPlayer = players.get(0);
+		playRound();
 	}
 
 	/**
@@ -247,45 +269,130 @@ public class CrazyEights {
 	 * 3) Ending the game if appropriate
 	 */
 	private void playRound() {
-		while (isGameActive()) {
+		if (isGameActive()) {
 			List<Card> hand = hands.get(currentPlayer);
 			List<Card> cards = new ArrayList();
 			cards.addAll(hand);
 				// By handing the player a copy of their hand,
 				// players are unable to change the cards in
 				// their actual hand
-			Card cardPlayed;
-			do {
-				state = GameState.WAITING_FOR_PLAYER_DECISION;
-				cardPlayed = currentPlayer.takeTurn(cards, this);
-				state = GameState.PLAYING;
-			} while (!(cardPlayed == null || (hand.contains(cardPlayed) && isPlayable(cardPlayed))));
-				// The while loop above ensures that the current player
-				// can actually play the card they have chosen
-			if (cardPlayed == null) {
+			state = GameState.WAITING_FOR_PLAYER_CARD;
+			currentPlayer.takeTurn(cards, this);
+		}
+	}
+
+	/**
+	 * Returns the number of cards in the hands of players,
+	 * starting with the given player and continuing in order
+	 * of play.
+	 * @param player Player to use as a reference
+	 * @return array of ints
+	 */
+	public int[] getHandSizes(CrazyEightsPlayer player) {
+		if (isGameActive()) {
+			int[] handSizes = new int[players.size()];
+			int currentPlayerID = players.indexOf(player);
+			for (int i = 0; i < players.size(); i++) {
+				handSizes[i] = hands.get(players.get((currentPlayerID + i) % players.size())).size();
+			}
+			return handSizes;
+		}
+		return null;
+	}
+
+	/**
+	 * Returns the cards in the hand of the given player
+	 * @param player Player to return the hand of
+	 * @return
+	 */
+	public List<Card> getHand(CrazyEightsPlayer player) {
+		List<Card> hand = hands.get(player);
+		List<Card> cards = new ArrayList();
+		cards.addAll(hand);
+		return cards;
+	}
+
+	/**
+	 * Notifies the game that the given player has decided to play the given card
+	 * @param player Player to play the card
+	 * @param card Card to be played
+	 * @return true iff the card was played successfully
+	 */
+	public boolean playCard(CrazyEightsPlayer player, Card card) {
+		if (state == GameState.WAITING_FOR_PLAYER_CARD && player == currentPlayer) {
+			state = GameState.PLAYING;
+			List<Card> hand = hands.get(currentPlayer);
+			if (card == null) {
 				drawCard();
 				moveToNextPlayer();
+			} else if (hand.contains(card) && isPlayable(card)) {
+				hand.remove(card);
+				discard(card);
+				notifyListenersOfHandSize();
+				card.execute();
 			} else {
-				System.out.println("Player "+players.indexOf(currentPlayer)+" plays "+cardPlayed);
-				hand.remove(cardPlayed);
-				discard(cardPlayed);
-				cardPlayed.execute();
+				state = GameState.WAITING_FOR_PLAYER_CARD;
+				return false;
 			}
-			checkEndGame();
+			if (!checkEndGame()) {
+				playRound();
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Adds an object to be notified of changes in hand sizes, discard pile, and game end
+	 * @param listener
+	 */
+	public void addPropertyChangeListener(PropertyChangeListener listener) {
+		listeners.add(listener);
+	}
+
+	/**
+	 * Removes a previously added listener
+	 * @param listener
+	 */
+	public void removePropertyChangeListener(PropertyChangeListener listener) {
+		listeners.remove(listener);
+	}
+
+	private void notifyListenersOfTopCard() {
+		PropertyChangeEvent event = new PropertyChangeEvent(this, "topCardOnDiscardPile", null, getTopCardOnDiscardPile());
+		for (PropertyChangeListener listener : listeners) {
+			listener.propertyChange(event);
+		}
+	}
+
+	private void notifyListenersOfHandSize() {
+		PropertyChangeEvent event = new PropertyChangeEvent(this, "handSize", null, null);
+		for (PropertyChangeListener listener : listeners) {
+			listener.propertyChange(event);
+		}
+	}
+
+	private void notifyListenersOfGameEnd() {
+		PropertyChangeEvent event = new PropertyChangeEvent(this, "gameComplete", false, true);
+		for (PropertyChangeListener listener : listeners) {
+			listener.propertyChange(event);
 		}
 	}
 
 	/**
 	 * Determines whether the game has ended because some player
 	 * no longer has any cards
+	 * @return true iff the game has ended
 	 */
-	private void checkEndGame() {
-		for (List<Card> hand : hands.values()) {
+	private boolean checkEndGame() {
+		for (int i = 0; i < players.size(); i++) {
+			List<Card> hand = hands.get(players.get(i));
 			if (hand.size() < 1) {
 				state = GameState.INACTIVE;
-				return;
+				notifyListenersOfGameEnd();
+				return true;
 			}
 		}
+		return false;
 	}
 
 	/**
@@ -295,7 +402,7 @@ public class CrazyEights {
 	 * @return Card on top of the discard pile
 	 */
 	public Card getTopCardOnDiscardPile() {
-		return topCardOnDiscardPile;
+		return new Card(topCardOnDiscardPile);
 	}
 
 	/**
@@ -316,7 +423,6 @@ public class CrazyEights {
 		game.addPlayer(new RandomCrazyEightsPlayer());
 		game.addPlayer(new RandomCrazyEightsPlayer());
 		game.addPlayer(new RandomCrazyEightsPlayer());
-		System.out.println(game.players.size());
 		game.start();
 	}
 
