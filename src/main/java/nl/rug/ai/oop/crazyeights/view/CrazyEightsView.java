@@ -19,11 +19,22 @@ public class CrazyEightsView extends JFrame {
 	CrazyEightsController controller;
 	JMenu restartOption;
 
+	/**
+	 * Creates a new Crazy Eights window
+	 */
 	public CrazyEightsView() {
 		super("Crazy Eights");
+		init();
 	}
 
-	public void init() {
+	/**
+	 * The play area consists of three GamePanes
+	 * 1) The opponent's hand
+	 *    no effect on click, not highlighted when selected, card backs only
+	 * 2) The deck and discard pile
+	 * 3) The player's hand
+	 */
+	private void init() {
 		selfPane = new GamePane();
 		selfPane.setActionCommand("playCard");
 		add(selfPane, BorderLayout.SOUTH);
@@ -40,7 +51,12 @@ public class CrazyEightsView extends JFrame {
 		menuBar.add(restartOption);
 	}
 
-	private String[] collapseHand(List<Card> cards) {
+	/**
+	 * Collapses a List of Cards into an array of String
+	 * @param cards List of Cards to collapse
+	 * @return collapsed array of String
+	 */
+	private static String[] collapseHand(List<Card> cards) {
 		String output[] = new String[cards.size()];
 		for (int i = 0; i < cards.size(); i++) {
 			output[i] = cards.get(i).toString();
@@ -48,7 +64,12 @@ public class CrazyEightsView extends JFrame {
 		return output;
 	}
 
-	private String[] getEmptyHand(int size) {
+	/**
+	 * Creates an array of "00" Strings of the given size
+	 * @param size number of "00" entries
+	 * @return
+	 */
+	private static String[] getEmptyHand(int size) {
 		String output[] = new String[size];
 		for (int i = 0; i < size; i++) {
 			output[i] = "00";
@@ -56,8 +77,18 @@ public class CrazyEightsView extends JFrame {
 		return output;
 	}
 
+	/**
+	 * Sets up the view to show the given game,
+	 * creates a Controller to control the given game, and
+	 * starts the game
+	 * @param game
+	 */
 	public void setup(CrazyEights game) {
-		controller = new CrazyEightsController(game, this);
+		createController(game);
+		setupListener(game);
+	}
+
+	private void setupListener(CrazyEights game) {
 		game.addPropertyChangeListener(evt -> {
 			switch (evt.getPropertyName()) {
 				case "gameComplete":
@@ -75,17 +106,19 @@ public class CrazyEightsView extends JFrame {
 					break;
 				case "handSize":
 					List<Card> hand = game.getHand(controller);
-					System.out.println(hand);
 					selfPane.setHand(collapseHand(hand));
-					int[] n = game.getHandSizes(controller);
-					System.out.println(Arrays.toString(n));
-					otherPane.setHand(getEmptyHand(n[1]));
+					int[] sizes = game.getHandSizes(controller);
+					otherPane.setHand(getEmptyHand(sizes[1]));
 					break;
 				case "topCardOnDiscardPile":
 					drawPane.setHand(new String[]{"00", evt.getNewValue().toString()});
 					break;
 			}
 		});
+	}
+
+	private void createController(CrazyEights game) {
+		controller = new CrazyEightsController(game, this);
 		restartOption.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -95,7 +128,5 @@ public class CrazyEightsView extends JFrame {
 		drawPane.addActionListener(controller);
 		selfPane.addActionListener(controller);
 		game.addPlayer(controller);
-		game.start();
-		drawPane.setHand(new String[]{"00", game.getTopCardOnDiscardPile().toString()});
 	}
 }

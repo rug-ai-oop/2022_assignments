@@ -12,10 +12,14 @@ import java.util.List;
 /**
  * Controller for the Crazy Eights game.
  * Interprets player action to be used in the game, and handles changing suit.
+ *
+ * The Controller is the element that implements the CrazyEightsPlayer interface.
+ * The View should not control the game directly, and therefore has no need to
+ * implement this interface.
  */
 public class CrazyEightsController implements CrazyEightsPlayer, ActionListener {
-	CrazyEights game;
-	JFrame view;
+	private CrazyEights game;
+	private JFrame view;
 
 	/**
 	 * Creates a new controller to go with a specific view and model
@@ -30,6 +34,10 @@ public class CrazyEightsController implements CrazyEightsPlayer, ActionListener 
 	@Override
 	public void takeTurn(List<Card> hand, CrazyEights game) {}
 
+	/**
+	 * Opens a dialog to get the player to choose a suit
+	 * @param game CardGame being played
+	 */
 	@Override
 	public void chooseSuit(CrazyEights game) {
 		String[] options = {"Clubs","Diamonds","Hearts","Spades"};

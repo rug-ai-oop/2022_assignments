@@ -7,19 +7,17 @@ import java.util.List;
  */
 public interface CrazyEightsPlayer {
 	/**
-	 * Asks the player to select a card from their hand to play,
-	 * or null if they want to draw a card instead
+	 * Notifies the player that it is their turn to
+	 * play or draw a card.
 	 * @param hand List of Cards in the player's hand
 	 * @param game CardGame being played
-	 * @return Card to be played, or null to draw a card
 	 */
 	void takeTurn(List<Card> hand, CrazyEights game);
 
 	/**
-	 * Asks the player to select a suit from the four possibilities
-	 * Clubs, Hearts, Spades, and Diamonds
+	 * Notifies the player that they can select a suit from
+	 * the four possibilities Clubs, Hearts, Spades, and Diamonds
 	 * @param game CardGame being played
-	 * @return Card.Suit chosen by the player
 	 */
 	void chooseSuit(CrazyEights game);
 

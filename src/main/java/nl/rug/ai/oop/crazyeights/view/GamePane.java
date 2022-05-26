@@ -19,7 +19,7 @@ import java.util.List;
  * shown higher than the other cards.
  */
 public class GamePane extends JPanel {
-	public static final Map<String, BufferedImage> cardImages = new HashMap(4);
+	public static final Map<String, BufferedImage> cardImages = new HashMap();
 	public static final int DEFAULT_SELECTION_DELTA = -40;
 	public static final String DEFAULT_ACTION_COMMAND = "CardSelected";
 

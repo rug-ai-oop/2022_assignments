@@ -7,14 +7,12 @@ import nl.rug.ai.oop.crazyeights.view.GamePane;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import java.awt.*;
 import java.io.IOException;
 
 public class Main {
-	public static int CARDS_PER_SUIT = 13;
-
 	/**
-	 * Preloads images
+	 * Preloads images into the GamePane
+	 * This allows the GamePane to match strings to images
 	 */
 	private static void loadImages() {
 		try {
@@ -39,16 +37,22 @@ public class Main {
 		}
 	}
 
+	/**
+	 * Starts a new game
+	 * To make the difference between model and view more explicit,
+	 * the game and the view are instantiated separately and joined.
+	 * @param args
+	 */
 	public static void main(String[] args) {
 		loadImages();
 		CrazyEights game = new CrazyEights();
 		game.addPlayer(new RandomCrazyEightsPlayer());
 
 		CrazyEightsView gameFrame = new CrazyEightsView();
-		gameFrame.init();
 		gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		gameFrame.setSize(800, 600);
 		gameFrame.setup(game);
+		game.start();
 		gameFrame.setLocationRelativeTo(null);
 		gameFrame.setVisible(true);
 	}

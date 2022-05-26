@@ -14,7 +14,6 @@ public class RandomCrazyEightsPlayer implements CrazyEightsPlayer {
 	 * play. If no such Card exists, draws a card
 	 * @param hand List of Cards in the player's hand
 	 * @param game CardGame being played
-	 * @return
 	 */
 	@Override
 	public void takeTurn(List<Card> hand, CrazyEights game) {
@@ -30,7 +29,6 @@ public class RandomCrazyEightsPlayer implements CrazyEightsPlayer {
 	/**
 	 * Chooses a random suit.
 	 * @param game CardGame being played
-	 * @return
 	 */
 	@Override
 	public void chooseSuit(CrazyEights game) {

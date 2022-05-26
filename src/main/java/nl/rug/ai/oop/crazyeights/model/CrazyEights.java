@@ -123,9 +123,7 @@ public class CrazyEights {
 	}
 
 	/**
-	 * Allows the current player to select a suit. To simulate this,
-	 * a "virtual card" of the chosen suit and the original value
-	 * is placed on top of the discard pile.
+	 * Notifies the current player to choose a suit.
 	 */
 	private void selectSuit() {
 		if (state == GameState.PLAYING) {
@@ -135,7 +133,13 @@ public class CrazyEights {
 	}
 
 	/**
-	 * Notifies the game that the given player has selected the given suit
+	 * Notifies the game that the given player has selected the given suit.
+	 * To simulate this, a "virtual card" of the chosen suit and the original
+	 * value is placed on top of the discard pile.
+	 *
+	 * Throws an IllegalStateException when the given player is not allowed
+	 * to select a suit at this point in the game.
+	 *
 	 * @param player Player that has selected a suit
 	 * @param suit Suit that has been selected
 	 */
@@ -210,8 +214,11 @@ public class CrazyEights {
 	}
 
 	/**
-	 * Adds a player to the game. Can only be performed when the game
-	 * is not currently being played.
+	 * Adds a player to the game.
+	 *
+	 * Throws an IllegalStateException when
+	 * the game is already being played.
+	 *
 	 * @param player CardGamePlayer to add to the game
 	 */
 	public void addPlayer(CrazyEightsPlayer player) {
@@ -224,8 +231,11 @@ public class CrazyEights {
 	}
 
 	/**
-	 * Removes a player from the game. Can only be performed when the game
-	 * is not currently being played.
+	 * Removes a player from the game.
+	 *
+	 * Throws an IllegalStateException when
+	 * the game is already being played.
+	 *
 	 * @param player CardGamePlayer to remove from the game
 	 */
 	public void removePlayer(CrazyEightsPlayer player) {
@@ -263,10 +273,7 @@ public class CrazyEights {
 	}
 
 	/**
-	 * Plays a single round of the game by
-	 * 1) Asking a player to choose an action
-	 * 2) Executing the action
-	 * 3) Ending the game if appropriate
+	 * Plays a single round of the game by asking a player to choose an action.
 	 */
 	private void playRound() {
 		if (isGameActive()) {
@@ -303,7 +310,7 @@ public class CrazyEights {
 	/**
 	 * Returns the cards in the hand of the given player
 	 * @param player Player to return the hand of
-	 * @return
+	 * @return list of cards on the player's hand
 	 */
 	public List<Card> getHand(CrazyEightsPlayer player) {
 		List<Card> hand = hands.get(player);
@@ -313,7 +320,18 @@ public class CrazyEights {
 	}
 
 	/**
-	 * Notifies the game that the given player has decided to play the given card
+	 * Notifies the game that the given player has decided to draw a card.
+	 * @param player Player to play the card
+	 * @return true iff a card was successfully drawn
+	 */
+	public boolean drawCard(CrazyEightsPlayer player) {
+		return playCard(player, null);
+	}
+
+	/**
+	 * Notifies the game that the given player has decided to play the given card,
+	 * or draw a card when the given card is null.
+	 *
 	 * @param player Player to play the card
 	 * @param card Card to be played
 	 * @return true iff the card was played successfully
